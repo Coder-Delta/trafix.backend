@@ -1,0 +1,37 @@
+{
+  "name": "trafix-ai-backend",
+  "version": "0.0.1",
+  "description": "The backend for Trafix AI",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js"
+  },
+  "keywords": [
+    "Hackathon",
+    "AI",
+    "Backend",
+    "CCTV",
+    "Traffic"
+  ],
+  "author": "Coder-Delta",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.9.4",
+    "multer": "^2.3.0",
+    "nodemailer": "^9.1.0",
+    "pg": "^8.13.0",
+    "redis": "^6.2.1",
+    "ws": "^8.18.0"
+  }
+}
