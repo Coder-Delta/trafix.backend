@@ -1,35 +1,30 @@
-import redis from 'redis';
+import { Redis } from '@upstash/redis';
 
 let client = null;
 
 export const redisConfig = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: Number(process.env.REDIS_PORT || 6379),
-  password: process.env.REDIS_PASSWORD || undefined,
-  username: process.env.REDIS_USERNAME || undefined,
+  upstashUrl: process.env.UPSTASH_REDIS_REST_URL,
+  upstashToken: process.env.UPSTASH_REDIS_REST_TOKEN,
 };
 
 export const initializeRedis = async () => {
-  if (!process.env.REDIS_HOST && !process.env.REDIS_URL) {
-    console.warn('[redis] Redis credentials not configured. Redis layer is scaffolded but disabled.');
+  if (!redisConfig.upstashUrl || !redisConfig.upstashToken) {
+    console.warn('[redis] Upstash credentials not configured. Redis layer is disabled.');
     return { connected: false, client: null, mode: 'disabled' };
   }
 
+  client = new Redis({
+    url: redisConfig.upstashUrl,
+    token: redisConfig.upstashToken,
+  });
+
   try {
-    client = redis.createClient({
-      url: process.env.REDIS_URL || `redis://${redisConfig.username ? `${redisConfig.username}@` : ''}${redisConfig.host}:${redisConfig.port}`,
-      password: redisConfig.password,
-    });
-
-    client.on('error', (error) => {
-      console.warn('[redis] Redis client error:', error.message);
-    });
-
-    await client.connect();
-    console.log('[redis] Redis connection initialized');
-    return { connected: true, client, mode: 'live' };
+    await client.ping();
+    console.log('[redis] Upstash Redis connection initialized');
+    return { connected: true, client, mode: 'upstash' };
   } catch (error) {
-    console.warn('[redis] Redis initialization failed. Continuing in scaffold mode.', error.message);
+    client = null;
+    console.warn('[redis] Upstash Redis initialization failed. Continuing in scaffold mode.', error.message);
     return { connected: false, client: null, mode: 'disabled' };
   }
 };
@@ -37,8 +32,6 @@ export const initializeRedis = async () => {
 export const getRedisClient = () => client;
 
 export const closeRedis = async () => {
-  if (!client) return;
-  await client.quit();
   client = null;
 };
 

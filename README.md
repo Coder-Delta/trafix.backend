@@ -232,11 +232,9 @@ POSTGRES_USER=postgres
 POSTGRES_PASSWORD=
 
 # Redis
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=
-REDIS_USERNAME=
-REDIS_URL=
+# Upstash Redis (preferred for hosted deployments)
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
 
 # CORS
 CORS_ORIGIN=http://localhost:3000
