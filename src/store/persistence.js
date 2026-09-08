@@ -343,6 +343,48 @@ class DataStore {
     return updated;
   }
 
+  addCamera(cameraData) {
+    const nextIdx = this.cameras.size + 1;
+    const cameraId = cameraData.camera_id || cameraData.id || `CAM_${String(nextIdx).padStart(3, '0')}`;
+    const lat = Number(cameraData.latitude ?? cameraData.lat ?? 22.5535);
+    const lng = Number(cameraData.longitude ?? cameraData.lng ?? 88.3525);
+    const camera = {
+      camera_id: cameraId,
+      id: cameraId,
+      name: cameraData.name || `Camera ${cameraId}`,
+      latitude: lat,
+      longitude: lng,
+      location: { lat, lng },
+      direction: cameraData.direction || 'Northbound',
+      status: cameraData.status || 'online',
+      fps: cameraData.fps !== undefined ? Number(cameraData.fps) : 25,
+      vehicle_count: 0,
+      vehicleCount: 0,
+      traffic_level: 'low',
+      trafficLevel: 'low',
+      stream_url: cameraData.stream_url || cameraData.streamUrl || '/videos/sample_traffic.mp4',
+      detected_vehicles: { car: 0, motorcycle: 0, bus: 0, truck: 0, van: 0, taxi: 0 },
+      detectedVehicles: { car: 0, motorcycle: 0, bus: 0, truck: 0, van: 0, taxi: 0 },
+      last_heartbeat: new Date().toISOString(),
+    };
+    this.cameras.set(cameraId, camera);
+    return camera;
+  }
+
+  deleteCamera(cameraId) {
+    return this.cameras.delete(cameraId);
+  }
+
+  clearCameras() {
+    this.cameras.clear();
+    return [];
+  }
+
+  resetCameras() {
+    this.cameras = new Map(INITIAL_CAMERAS.map((c) => [c.camera_id, { ...c }]));
+    return Array.from(this.cameras.values());
+  }
+
   incrementCameraVehicle(cameraId, vehicleType) {
     const cam = this.cameras.get(cameraId);
     if (!cam) return;

@@ -1,12 +1,23 @@
 import express from 'express';
-import { listCameras, getCameraById, getCameraStatus, cameraHeartbeat } from '../controllers/camera.controller.js';
+import {
+  listCameras,
+  getCameraById,
+  getCameraStatus,
+  cameraHeartbeat,
+  createCamera,
+  deleteCamera,
+  resetCameras,
+} from '../controllers/camera.controller.js';
 import { publicAccess, requireOperator } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
 router.get('/', publicAccess, listCameras);
+router.post('/', publicAccess, createCamera);
+router.post('/reset', publicAccess, resetCameras);
 router.get('/:camera_id', publicAccess, getCameraById);
 router.get('/:camera_id/status', publicAccess, getCameraStatus);
+router.delete('/:camera_id', publicAccess, deleteCamera);
 router.post('/:camera_id/heartbeat', publicAccess, cameraHeartbeat);
 
 export default router;

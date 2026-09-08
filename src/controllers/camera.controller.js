@@ -1,5 +1,6 @@
 import { dataStore } from '../store/persistence.js';
 import { HttpError } from '../utils/httpError.js';
+import { broadcastTrafficEvent } from '../websocket/traffic.ws.js';
 
 export const listCameras = async (req, res, next) => {
   try {
@@ -88,4 +89,92 @@ export const cameraHeartbeat = async (req, res, next) => {
   }
 };
 
-export default { listCameras, getCameraById, getCameraStatus, cameraHeartbeat };
+export const createCamera = async (req, res, next) => {
+  try {
+    const { name, latitude, longitude, direction, stream_url, streamUrl, fps, camera_id } = req.body || {};
+
+    if (latitude === undefined || longitude === undefined) {
+      throw new HttpError('VALIDATION_ERROR', 'Latitude and longitude are required.', 400);
+    }
+
+    const camera = dataStore.addCamera({
+      camera_id,
+      name,
+      latitude,
+      longitude,
+      direction,
+      stream_url: stream_url || streamUrl,
+      fps,
+    });
+
+    broadcastTrafficEvent({
+      id: `cam_add_${Date.now()}`,
+      type: 'camera_added',
+      timestamp: new Date().toISOString(),
+      data: camera,
+    });
+
+    res.status(201).json({
+      success: true,
+      data: camera,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteCamera = async (req, res, next) => {
+  try {
+    const { camera_id } = req.params;
+    const deleted = dataStore.deleteCamera(camera_id);
+
+    if (!deleted) {
+      throw new HttpError('NOT_FOUND', `Camera ${camera_id} not found`, 404);
+    }
+
+    broadcastTrafficEvent({
+      id: `cam_del_${Date.now()}`,
+      type: 'camera_deleted',
+      timestamp: new Date().toISOString(),
+      data: { camera_id },
+    });
+
+    res.status(200).json({
+      success: true,
+      data: { camera_id, deleted: true },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const resetCameras = async (req, res, next) => {
+  try {
+    const { mode } = req.body || {};
+    let cameras;
+    if (mode === 'clear') {
+      cameras = dataStore.clearCameras();
+    } else {
+      cameras = dataStore.resetCameras();
+    }
+
+    broadcastTrafficEvent({
+      id: `cam_reset_${Date.now()}`,
+      type: 'cameras_reset',
+      timestamp: new Date().toISOString(),
+      data: { cameras, total: cameras.length },
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        cameras,
+        total: cameras.length,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export default { listCameras, getCameraById, getCameraStatus, cameraHeartbeat, createCamera, deleteCamera, resetCameras };

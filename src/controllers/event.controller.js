@@ -32,6 +32,7 @@ export const createDetectionEvent = async (req, res, next) => {
     });
 
     const camera = dataStore.getCamera(payload.camera_id);
+    const trajectory = dataStore.getVehicleTrajectory(vehicle.vehicle_id);
 
     // 3. Broadcast Real-Time Vehicle Detection via WebSocket
     broadcastTrafficEvent({
@@ -50,6 +51,19 @@ export const createDetectionEvent = async (req, res, next) => {
         confidence: payload.vehicle_confidence || 0.95,
         speed: Math.floor(35 + Math.random() * 25),
         timestamp: payload.observed_at,
+        trajectory: trajectory && trajectory.points?.length > 0 ? {
+          vehicleId: trajectory.vehicle_id,
+          plateNumber: trajectory.plate_number,
+          vehicleType: trajectory.vehicle_type,
+          detections: trajectory.points.map((pt, idx) => ({
+            id: pt.event_id || `DET_${idx + 1}`,
+            cameraId: pt.camera_id,
+            cameraName: pt.camera_name,
+            latitude: pt.latitude,
+            longitude: pt.longitude,
+            detectedAt: pt.timestamp,
+          })),
+        } : null,
       },
     });
 

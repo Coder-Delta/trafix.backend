@@ -121,8 +121,33 @@ async function runTests() {
       throw new Error(`Expected matched_by 'embedding', got '${reidJson.data?.matched_by}'`);
     }
 
+    // 12. Create custom camera
+    const res12 = await fetch(`${baseUrl}/api/v1/cameras`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        camera_id: 'CAM_CUSTOM_01',
+        name: 'Salt Lake Test Cam',
+        latitude: 22.5769,
+        longitude: 88.4331,
+        direction: 'Eastbound',
+        stream_url: '/videos/sample_traffic.mp4',
+      }),
+    });
+    const data12 = await res12.json();
+    if (res12.status !== 201) throw new Error('Create camera failed');
+    console.log('[TEST 12] POST /api/v1/cameras -> 201 created', data12.data.camera_id);
+
+    // 13. Delete custom camera
+    const res13 = await fetch(`${baseUrl}/api/v1/cameras/CAM_CUSTOM_01`, {
+      method: 'DELETE',
+    });
+    const data13 = await res13.json();
+    if (res13.status !== 200) throw new Error('Delete camera failed');
+    console.log('[TEST 13] DELETE /api/v1/cameras/:id -> 200 deleted', data13.data.camera_id);
+
     ws.close();
-    console.log('\n>>> ALL 11 BACKEND VERIFICATION TESTS PASSED SUCCESSFULLY! <<<');
+    console.log('\n>>> ALL 13 BACKEND VERIFICATION TESTS PASSED SUCCESSFULLY! <<<');
   } finally {
     server.close();
   }
