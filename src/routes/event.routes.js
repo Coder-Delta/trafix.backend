@@ -6,6 +6,10 @@ import { publicAccess, requireOperator } from '../middleware/auth.middleware.js'
 const detectionEventSchema = {
   validate: (payload) => {
     const body = payload || {};
+    if (!body.local_track_id) {
+      body.local_track_id = `${body.camera_id || 'CAM'}_TRK_${Date.now()}`;
+    }
+
     const requiredFields = [
       'camera_id',
       'observed_at',
