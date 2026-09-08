@@ -1,19 +1,32 @@
+import { dataStore } from '../store/persistence.js';
+
 export const getAnalyticsOverview = async (req, res, next) => {
   try {
+    const overview = dataStore.getAnalyticsOverview();
+
     res.status(200).json({
       success: true,
-      data: {
-        total_vehicles_detected: 0,
-        unique_vehicles: 0,
-        average_speed_kmh: 0,
-        busiest_camera: null,
-        incidents: [],
-      },
-      message: 'TODO: aggregate analytics across all detection and traffic data',
+      data: overview,
     });
   } catch (error) {
     next(error);
   }
 };
 
-export default { getAnalyticsOverview };
+export const getAlerts = async (req, res, next) => {
+  try {
+    const alerts = dataStore.getAlerts();
+
+    res.status(200).json({
+      success: true,
+      data: {
+        alerts,
+        total: alerts.length,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export default { getAnalyticsOverview, getAlerts };

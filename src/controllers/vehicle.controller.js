@@ -1,24 +1,32 @@
+import { dataStore } from '../store/persistence.js';
+import { trajectoryService } from '../services/trajectory.service.js';
+import { HttpError } from '../utils/httpError.js';
+
 export const searchVehicles = async (req, res, next) => {
   try {
-    const { plate_number, camera_id, page = 1, limit = 20 } = req.query;
+    const { plate_number, q, camera_id } = req.query;
+    const queryStr = plate_number || q || '';
+
+    let vehicles = dataStore.getAllVehicles();
+
+    if (queryStr) {
+      const clean = queryStr.replace(/[\s-]/g, '').toUpperCase();
+      vehicles = vehicles.filter((v) => {
+        const p = (v.plate_number || v.plateNumber || '').replace(/[\s-]/g, '').toUpperCase();
+        return p === clean || p.includes(clean);
+      });
+    }
+
+    if (camera_id) {
+      vehicles = vehicles.filter((v) => v.camera_id === camera_id || v.camera_ids?.includes(camera_id));
+    }
 
     res.status(200).json({
       success: true,
       data: {
-        vehicles: [
-          {
-            vehicle_id: 'veh_001',
-            plate_number: plate_number || 'ABC123',
-            vehicle_type: 'car',
-            confidence: 0.96,
-            camera_id: camera_id || 'cam_001',
-          },
-        ],
-        page: Number(page),
-        limit: Number(limit),
-        total: 1,
+        vehicles,
+        total: vehicles.length,
       },
-      message: 'TODO: implement global vehicle identity search and filtering',
     });
   } catch (error) {
     next(error);
@@ -28,19 +36,19 @@ export const searchVehicles = async (req, res, next) => {
 export const getVehicleById = async (req, res, next) => {
   try {
     const { vehicle_id } = req.params;
+    let vehicle = dataStore.getVehicleById(vehicle_id);
+
+    if (!vehicle) {
+      vehicle = dataStore.findVehicleByPlate(vehicle_id);
+    }
+
+    if (!vehicle) {
+      throw new HttpError('NOT_FOUND', `Vehicle ${vehicle_id} not found`, 404);
+    }
 
     res.status(200).json({
       success: true,
-      data: {
-        vehicle_id,
-        vehicle_type: 'car',
-        plate_number: 'ABC123',
-        first_seen_at: new Date().toISOString(),
-        last_seen_at: new Date().toISOString(),
-        confidence: 0.96,
-        camera_ids: ['cam_001'],
-      },
-      message: 'TODO: resolve global identity and avoid exposing raw embedding vectors through public APIs',
+      data: vehicle,
     });
   } catch (error) {
     next(error);
@@ -50,23 +58,22 @@ export const getVehicleById = async (req, res, next) => {
 export const getVehicleEvents = async (req, res, next) => {
   try {
     const { vehicle_id } = req.params;
+    let vehicle = dataStore.getVehicleById(vehicle_id);
+
+    if (!vehicle) {
+      vehicle = dataStore.findVehicleByPlate(vehicle_id);
+    }
+
+    const events = vehicle ? dataStore.getDetectionsByVehicleId(vehicle.vehicle_id) : [];
 
     res.status(200).json({
       success: true,
       data: {
-        vehicle_id,
-        events: [
-          {
-            event_id: 'evt_123',
-            camera_id: 'cam_001',
-            observed_at: new Date().toISOString(),
-            local_track_id: 'track_123',
-            vehicle_confidence: 0.96,
-            bounding_box: { x1: 10, y1: 20, x2: 200, y2: 180 },
-          },
-        ],
+        vehicle_id: vehicle?.vehicle_id || vehicle_id,
+        plate_number: vehicle?.plate_number || vehicle_id,
+        events,
+        total: events.length,
       },
-      message: 'TODO: fetch ordered events by global vehicle identity',
     });
   } catch (error) {
     next(error);
@@ -76,21 +83,23 @@ export const getVehicleEvents = async (req, res, next) => {
 export const getVehicleTrajectory = async (req, res, next) => {
   try {
     const { vehicle_id } = req.params;
+    const result = await trajectoryService.getTrajectoryByVehicleId(vehicle_id);
+
+    if (!result.success || !result.data) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          vehicle_id,
+          plate_number: vehicle_id,
+          points: [],
+          summary: { total_points: 0 },
+        },
+      });
+    }
 
     res.status(200).json({
       success: true,
-      data: {
-        vehicle_id,
-        points: [
-          { timestamp: new Date().toISOString(), camera_id: 'cam_001', x: 10, y: 20 },
-        ],
-        summary: {
-          total_points: 1,
-          start_time: new Date().toISOString(),
-          end_time: new Date().toISOString(),
-        },
-      },
-      message: 'TODO: compute or retrieve trajectory from stored detections',
+      data: result.data,
     });
   } catch (error) {
     next(error);

@@ -23,7 +23,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(createRequestContext);
 
-app.get('/health', (req, res) => {
+const healthHandler = (req, res) => {
   res.status(200).json({
     success: true,
     data: {
@@ -33,7 +33,10 @@ app.get('/health', (req, res) => {
       request_id: req.id,
     },
   });
-});
+};
+
+app.get('/health', healthHandler);
+app.get('/api/v1/health', healthHandler);
 
 app.get('/api/v1/openapi', (req, res) => {
   res.status(200).json({
