@@ -101,6 +101,9 @@ export const INITIAL_CAMERAS = [
   },
 ];
 
+const nowMs = Date.now();
+const timeAgoIso = (min) => new Date(nowMs - min * 60000).toISOString();
+
 export const INITIAL_VEHICLES = [
   {
     vehicle_id: 'VH_001',
@@ -117,10 +120,10 @@ export const INITIAL_VEHICLES = [
     cameraName: 'Park Street Junction',
     latitude: 22.5535,
     longitude: 88.3525,
-    first_seen_at: '10:12:05',
-    last_seen_at: '10:42:18',
-    detected_at: '10:42:18',
-    detectedAt: '10:42:18',
+    first_seen_at: timeAgoIso(35),
+    last_seen_at: timeAgoIso(5),
+    detected_at: timeAgoIso(5),
+    detectedAt: timeAgoIso(5),
     camera_ids: ['CAM_001', 'CAM_002', 'CAM_004', 'CAM_003'],
     embedding: null,
   },
@@ -139,10 +142,10 @@ export const INITIAL_VEHICLES = [
     cameraName: 'Esplanade Crossing',
     latitude: 22.5646,
     longitude: 88.3512,
-    first_seen_at: '10:20:10',
-    last_seen_at: '10:45:32',
-    detected_at: '10:45:32',
-    detectedAt: '10:45:32',
+    first_seen_at: timeAgoIso(25),
+    last_seen_at: timeAgoIso(4),
+    detected_at: timeAgoIso(4),
+    detectedAt: timeAgoIso(4),
     camera_ids: ['CAM_005', 'CAM_001', 'CAM_002'],
     embedding: null,
   },
@@ -161,10 +164,10 @@ export const INITIAL_VEHICLES = [
     cameraName: 'Salt Lake Sector V',
     latitude: 22.5769,
     longitude: 88.4331,
-    first_seen_at: '10:30:15',
-    last_seen_at: '10:48:05',
-    detected_at: '10:48:05',
-    detectedAt: '10:48:05',
+    first_seen_at: timeAgoIso(18),
+    last_seen_at: timeAgoIso(3),
+    detected_at: timeAgoIso(3),
+    detectedAt: timeAgoIso(3),
     camera_ids: ['CAM_004', 'CAM_002', 'CAM_003'],
     embedding: null,
   },
@@ -183,10 +186,10 @@ export const INITIAL_VEHICLES = [
     cameraName: 'Howrah Bridge',
     latitude: 22.5958,
     longitude: 88.3476,
-    first_seen_at: '10:35:00',
-    last_seen_at: '10:51:21',
-    detected_at: '10:51:21',
-    detectedAt: '10:51:21',
+    first_seen_at: timeAgoIso(15),
+    last_seen_at: timeAgoIso(2),
+    detected_at: timeAgoIso(2),
+    detectedAt: timeAgoIso(2),
     camera_ids: ['CAM_003', 'CAM_004'],
     embedding: null,
   },
@@ -199,7 +202,7 @@ export const INITIAL_DETECTIONS = [
     vehicle_id: 'VH_001',
     plate_number: 'WB12AB1234',
     camera_id: 'CAM_001',
-    observed_at: '10:12:05',
+    observed_at: timeAgoIso(35),
     vehicle_type: 'car',
     vehicle_confidence: 0.97,
     bounding_box: { x1: 120, y1: 200, x2: 340, y2: 380 },
@@ -209,7 +212,7 @@ export const INITIAL_DETECTIONS = [
     vehicle_id: 'VH_001',
     plate_number: 'WB12AB1234',
     camera_id: 'CAM_002',
-    observed_at: '10:18:42',
+    observed_at: timeAgoIso(25),
     vehicle_type: 'car',
     vehicle_confidence: 0.96,
     bounding_box: { x1: 150, y1: 180, x2: 360, y2: 370 },
@@ -219,7 +222,7 @@ export const INITIAL_DETECTIONS = [
     vehicle_id: 'VH_001',
     plate_number: 'WB12AB1234',
     camera_id: 'CAM_004',
-    observed_at: '10:27:18',
+    observed_at: timeAgoIso(15),
     vehicle_type: 'car',
     vehicle_confidence: 0.95,
     bounding_box: { x1: 100, y1: 220, x2: 310, y2: 410 },
@@ -229,7 +232,7 @@ export const INITIAL_DETECTIONS = [
     vehicle_id: 'VH_001',
     plate_number: 'WB12AB1234',
     camera_id: 'CAM_003',
-    observed_at: '10:41:33',
+    observed_at: timeAgoIso(5),
     vehicle_type: 'car',
     vehicle_confidence: 0.96,
     bounding_box: { x1: 130, y1: 190, x2: 330, y2: 360 },
@@ -240,7 +243,7 @@ export const INITIAL_DETECTIONS = [
     vehicle_id: 'VH_002',
     plate_number: 'WB06CD5678',
     camera_id: 'CAM_005',
-    observed_at: '10:20:10',
+    observed_at: timeAgoIso(25),
     vehicle_type: 'motorcycle',
     vehicle_confidence: 0.94,
     bounding_box: { x1: 80, y1: 150, x2: 180, y2: 290 },
@@ -250,7 +253,7 @@ export const INITIAL_DETECTIONS = [
     vehicle_id: 'VH_002',
     plate_number: 'WB06CD5678',
     camera_id: 'CAM_001',
-    observed_at: '10:32:45',
+    observed_at: timeAgoIso(12),
     vehicle_type: 'motorcycle',
     vehicle_confidence: 0.95,
     bounding_box: { x1: 90, y1: 160, x2: 190, y2: 300 },
@@ -260,10 +263,31 @@ export const INITIAL_DETECTIONS = [
     vehicle_id: 'VH_002',
     plate_number: 'WB06CD5678',
     camera_id: 'CAM_002',
-    observed_at: '10:45:32',
+    observed_at: timeAgoIso(4),
     vehicle_type: 'motorcycle',
     vehicle_confidence: 0.93,
     bounding_box: { x1: 110, y1: 170, x2: 210, y2: 310 },
+  },
+  // WB18GH3456 Trajectory (Wanted Truck)
+  {
+    event_id: 'DET_008',
+    vehicle_id: 'VH_004',
+    plate_number: 'WB18GH3456',
+    camera_id: 'CAM_001',
+    observed_at: timeAgoIso(15),
+    vehicle_type: 'truck',
+    vehicle_confidence: 0.95,
+    bounding_box: { x1: 60, y1: 120, x2: 240, y2: 320 },
+  },
+  {
+    event_id: 'DET_009',
+    vehicle_id: 'VH_004',
+    plate_number: 'WB18GH3456',
+    camera_id: 'CAM_004',
+    observed_at: timeAgoIso(2),
+    vehicle_type: 'truck',
+    vehicle_confidence: 0.92,
+    bounding_box: { x1: 70, y1: 140, x2: 260, y2: 340 },
   },
 ];
 
@@ -346,11 +370,28 @@ class DataStore {
     const cleanTarget = plateNumber.replace(/[\s-]/g, '').toUpperCase();
     for (const vehicle of this.vehicles.values()) {
       const cleanPlate = (vehicle.plate_number || vehicle.plateNumber || '').replace(/[\s-]/g, '').toUpperCase();
-      if (cleanPlate === cleanTarget || cleanPlate.includes(cleanTarget)) {
+      const cleanId = (vehicle.vehicle_id || vehicle.id || '').replace(/[\s-]/g, '').toUpperCase();
+      const cleanTrack = (vehicle.local_track_id || '').replace(/[\s-]/g, '').toUpperCase();
+
+      if (
+        cleanPlate === cleanTarget || cleanPlate.includes(cleanTarget) ||
+        cleanId === cleanTarget || cleanId.includes(cleanTarget) ||
+        (cleanTrack && (cleanTrack === cleanTarget || cleanTrack.includes(cleanTarget)))
+      ) {
         return vehicle;
       }
     }
     return null;
+  }
+
+  getRecentVehicles(limit = 10) {
+    return Array.from(this.vehicles.values())
+      .sort((a, b) => new Date(b.last_seen_at || b.detected_at).getTime() - new Date(a.last_seen_at || a.detected_at).getTime())
+      .slice(0, limit);
+  }
+
+  getRecentDetections(limit = 10) {
+    return this.detections.slice(-limit).reverse();
   }
 
   saveVehicle(vehicle) {

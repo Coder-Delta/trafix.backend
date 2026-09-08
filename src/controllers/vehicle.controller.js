@@ -13,13 +13,17 @@ export const searchVehicles = async (req, res, next) => {
       const clean = queryStr.replace(/[\s-]/g, '').toUpperCase();
       vehicles = vehicles.filter((v) => {
         const p = (v.plate_number || v.plateNumber || '').replace(/[\s-]/g, '').toUpperCase();
-        return p === clean || p.includes(clean);
+        const id = (v.vehicle_id || v.id || '').replace(/[\s-]/g, '').toUpperCase();
+        const trk = (v.local_track_id || '').replace(/[\s-]/g, '').toUpperCase();
+        return p === clean || p.includes(clean) || id === clean || id.includes(clean) || (trk && trk.includes(clean));
       });
     }
 
     if (camera_id) {
       vehicles = vehicles.filter((v) => v.camera_id === camera_id || v.camera_ids?.includes(camera_id));
     }
+
+    vehicles.sort((a, b) => new Date(b.last_seen_at || b.detected_at).getTime() - new Date(a.last_seen_at || a.detected_at).getTime());
 
     res.status(200).json({
       success: true,
