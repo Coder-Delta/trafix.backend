@@ -1,3 +1,12 @@
+import 'dotenv/config';
+import { getDatabasePool } from '../config/database.js';
+import * as dbStore from './dbPersistence.js';
+
+export const isDbMode = () => {
+  const flag = (process.env.MVP_DEMO_MODE || '').trim().toLowerCase();
+  return flag === 'true' || flag === '1' || flag === 'db';
+};
+
 /**
  * Unified In-Memory & Database-Ready Persistence Store
  * Stores Kolkata ANPR surveillance data:
@@ -115,6 +124,45 @@ class DataStore {
     this.alerts = [];
   }
 
+  async init() {
+    if (isDbMode()) {
+      console.log('[persistence] MVP_DEMO_MODE=true: Database Persistence Mode active. Syncing with PostgreSQL...');
+      const pool = getDatabasePool();
+      if (pool) {
+        try {
+          await dbStore.createTables(pool);
+          const dbCameras = await dbStore.loadCamerasFromDb(pool);
+          if (dbCameras.length === 0) {
+            console.log('[persistence] Seeding initial cameras into PostgreSQL...');
+            await dbStore.seedCamerasToDb(pool, INITIAL_CAMERAS);
+            const seeded = await dbStore.loadCamerasFromDb(pool);
+            this.cameras = new Map(seeded.map((c) => [c.camera_id, c]));
+          } else {
+            this.cameras = new Map(dbCameras.map((c) => [c.camera_id, c]));
+          }
+
+          const dbVehicles = await dbStore.loadVehiclesFromDb(pool);
+          this.vehicles = new Map(dbVehicles.map((v) => [v.vehicle_id, v]));
+
+          const dbDetections = await dbStore.loadDetectionsFromDb(pool);
+          this.detections = dbDetections;
+
+          const dbAlerts = await dbStore.loadAlertsFromDb(pool);
+          this.alerts = dbAlerts;
+          console.log(`[persistence] DB sync complete: ${this.cameras.size} cameras, ${this.vehicles.size} vehicles, ${this.detections.length} detections.`);
+        } catch (err) {
+          console.error('[persistence] Failed to sync with PostgreSQL:', err.message);
+        }
+      }
+    } else {
+      console.log('[persistence] MVP_DEMO_MODE=false: In-Memory Clean-Slate Mode active. Starting 100% fresh on restart with zero leftover data.');
+      this.cameras = new Map(INITIAL_CAMERAS.map((c) => [c.camera_id, { ...c, vehicle_count: 0, vehicleCount: 0 }]));
+      this.vehicles = new Map();
+      this.detections = [];
+      this.alerts = [];
+    }
+  }
+
   // Camera methods
   getCameras() {
     return Array.from(this.cameras.values());
@@ -129,6 +177,9 @@ class DataStore {
     if (!existing) return null;
     const updated = { ...existing, ...updateData, last_heartbeat: new Date().toISOString() };
     this.cameras.set(cameraId, updated);
+    if (isDbMode()) {
+      dbStore.updateCameraInDb(getDatabasePool(), cameraId, updateData).catch((err) => console.warn('[db] updateCamera error:', err.message));
+    }
     return updated;
   }
 
@@ -157,11 +208,18 @@ class DataStore {
       last_heartbeat: new Date().toISOString(),
     };
     this.cameras.set(cameraId, camera);
+    if (isDbMode()) {
+      dbStore.saveCameraToDb(getDatabasePool(), camera).catch((err) => console.warn('[db] addCamera error:', err.message));
+    }
     return camera;
   }
 
   deleteCamera(cameraId) {
-    return this.cameras.delete(cameraId);
+    const deleted = this.cameras.delete(cameraId);
+    if (isDbMode()) {
+      dbStore.deleteCameraFromDb(getDatabasePool(), cameraId).catch((err) => console.warn('[db] deleteCamera error:', err.message));
+    }
+    return deleted;
   }
 
   clearCameras() {
@@ -227,6 +285,9 @@ class DataStore {
 
   saveVehicle(vehicle) {
     this.vehicles.set(vehicle.vehicle_id, vehicle);
+    if (isDbMode()) {
+      dbStore.saveVehicleToDb(getDatabasePool(), vehicle).catch((err) => console.warn('[db] saveVehicle error:', err.message));
+    }
     return vehicle;
   }
 
@@ -234,6 +295,9 @@ class DataStore {
   saveDetection(detection) {
     this.detections.push(detection);
     this.incrementCameraVehicle(detection.camera_id, detection.vehicle_type || 'car');
+    if (isDbMode()) {
+      dbStore.saveDetectionToDb(getDatabasePool(), detection).catch((err) => console.warn('[db] saveDetection error:', err.message));
+    }
     return detection;
   }
 
@@ -286,6 +350,9 @@ class DataStore {
 
   addAlert(alert) {
     this.alerts.unshift(alert);
+    if (isDbMode()) {
+      dbStore.saveAlertToDb(getDatabasePool(), alert).catch((err) => console.warn('[db] saveAlert error:', err.message));
+    }
     return alert;
   }
 

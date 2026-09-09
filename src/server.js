@@ -3,6 +3,7 @@ import http from 'http';
 import app from './app.js';
 import { initializeDatabase } from './config/database.js';
 import { initializeRedis } from './config/redis.js';
+import { dataStore } from './store/persistence.js';
 import { attachTrafficSocketServer, attachVehicleSocketServer } from './websocket/traffic.ws.js';
 
 const port = Number(process.env.PORT || 8000);
@@ -10,6 +11,7 @@ const port = Number(process.env.PORT || 8000);
 const startServer = async () => {
   try {
     await initializeDatabase();
+    await dataStore.init();
     await initializeRedis();
 
     const server = http.createServer(app);
