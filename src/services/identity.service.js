@@ -141,7 +141,7 @@ export const identityService = {
     if (Array.isArray(vehicle_embedding) && vehicle_embedding.length > 0) {
       let bestMatch = null;
       let highestSim = 0;
-      const SIMILARITY_THRESHOLD = 0.85;
+      const SIMILARITY_THRESHOLD = 0.78;
 
       for (const candidate of dataStore.getAllVehicles()) {
         if (candidate.embedding && Array.isArray(candidate.embedding)) {
@@ -154,6 +154,7 @@ export const identityService = {
       }
 
       if (bestMatch && highestSim >= SIMILARITY_THRESHOLD) {
+        console.log(`[RE-ID MATCH] Vehicle ${bestMatch.vehicle_id} (${bestMatch.plate_number}) Re-Identified at ${currentCamera?.name || camera_id} (sim: ${(highestSim * 100).toFixed(1)}%)`);
         // Visual Re-ID matched across cameras without requiring plate!
         bestMatch.last_seen_at = observed_at;
         bestMatch.detected_at = observed_at;

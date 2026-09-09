@@ -51,6 +51,8 @@ export const createDetectionEvent = async (req, res, next) => {
         confidence: payload.vehicle_confidence || 0.95,
         speed: Math.floor(35 + Math.random() * 25),
         timestamp: payload.observed_at,
+        matchedBy: matchedBy,
+        isNew: isNew,
         trajectory: trajectory && trajectory.points?.length > 0 ? {
           vehicleId: trajectory.vehicle_id,
           plateNumber: trajectory.plate_number,
