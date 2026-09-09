@@ -7,6 +7,7 @@ import {
   createCamera,
   deleteCamera,
   resetCameras,
+  updateCameraDetails,
 } from '../controllers/camera.controller.js';
 import { publicAccess, requireOperator } from '../middleware/auth.middleware.js';
 
@@ -17,6 +18,8 @@ router.post('/', publicAccess, createCamera);
 router.post('/reset', publicAccess, resetCameras);
 router.get('/:camera_id', publicAccess, getCameraById);
 router.get('/:camera_id/status', publicAccess, getCameraStatus);
+router.patch('/:camera_id', publicAccess, updateCameraDetails);
+router.put('/:camera_id', publicAccess, updateCameraDetails);
 router.delete('/:camera_id', publicAccess, deleteCamera);
 router.post('/:camera_id/heartbeat', publicAccess, cameraHeartbeat);
 

@@ -177,4 +177,49 @@ export const resetCameras = async (req, res, next) => {
   }
 };
 
-export default { listCameras, getCameraById, getCameraStatus, cameraHeartbeat, createCamera, deleteCamera, resetCameras };
+export const updateCameraDetails = async (req, res, next) => {
+  try {
+    const { camera_id } = req.params;
+    const body = req.body || {};
+
+    const existing = dataStore.getCamera(camera_id);
+    if (!existing) {
+      throw new HttpError('NOT_FOUND', `Camera ${camera_id} not found`, 404);
+    }
+
+    const updated = dataStore.updateCamera(camera_id, {
+      name: body.name !== undefined ? body.name : existing.name,
+      latitude: body.latitude !== undefined ? Number(body.latitude) : existing.latitude,
+      longitude: body.longitude !== undefined ? Number(body.longitude) : existing.longitude,
+      direction: body.direction !== undefined ? body.direction : existing.direction,
+      stream_url: body.stream_url || body.streamUrl || existing.stream_url,
+      fps: body.fps !== undefined ? Number(body.fps) : existing.fps,
+      status: body.status || existing.status,
+    });
+
+    broadcastTrafficEvent({
+      id: `cam_upd_${Date.now()}`,
+      type: 'camera_updated',
+      timestamp: new Date().toISOString(),
+      data: updated,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export default {
+  listCameras,
+  getCameraById,
+  getCameraStatus,
+  cameraHeartbeat,
+  createCamera,
+  deleteCamera,
+  resetCameras,
+  updateCameraDetails,
+};

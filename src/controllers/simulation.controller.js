@@ -30,13 +30,55 @@ export const playCameraDetection = async (req, res, next) => {
     const aiRootDir = path.resolve(__dirname, '../../../Traffix_Ai');
     const pythonExe = path.join(aiRootDir, 'venv/bin/python');
     const mainPy = path.join(aiRootDir, 'main.py');
-    const videoPath = path.join(aiRootDir, 'data/videos/1.sample_traffic.mp4');
+
+    // Dynamically resolve video from camera.stream_url or custom video
+    let videoPath = path.join(aiRootDir, 'data/videos/215258_medium.mp4');
+    if (camera.stream_url) {
+      if (fs.existsSync(camera.stream_url)) {
+        videoPath = camera.stream_url;
+      } else if (camera.stream_url.includes('sample')) {
+        videoPath = path.join(aiRootDir, 'data/videos/215258_medium.mp4');
+      } else if (camera.stream_url.includes('junction')) {
+        videoPath = path.join(aiRootDir, 'data/videos/215258_medium.mp4');
+      }
+    }
 
     const canRunPython = fs.existsSync(pythonExe) && fs.existsSync(mainPy) && fs.existsSync(videoPath);
 
+    // 1. First check if Traffix_Ai Standby Daemon is running on port 8002
+    try {
+      const daemonCheck = await fetch('http://localhost:8002/status', { signal: AbortSignal.timeout(600) });
+      if (daemonCheck.ok) {
+        console.log(`[SIMULATION] Waking up Traffix_Ai Standby Daemon (port 8002) for ${camera_id}...`);
+        fetch('http://localhost:8002/api/v1/detect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            camera_id,
+            video_source: videoPath,
+            backend_url: `http://localhost:${process.env.PORT || 8000}`,
+            max_frames,
+          }),
+        }).catch((err) => console.warn(`[SIMULATION] Daemon call error: ${err.message}`));
+
+        return res.status(200).json({
+          success: true,
+          data: {
+            started: true,
+            mode: 'ai_daemon',
+            camera_id,
+            camera_name: camera.name,
+            message: `Traffix_Ai Standby Daemon awakened for ${camera.name}`,
+          },
+        });
+      }
+    } catch {
+      // Daemon not running, fall back to direct child process spawn
+    }
+
     if (mode === 'ai' || (mode === 'auto' && canRunPython)) {
       // Spawn actual Python AI pipeline with YOLOv8 + BoT-SORT + MobileNetV3 Re-ID
-      console.log(`[SIMULATION] Spawning Python AI Service for ${camera_id}...`);
+      console.log(`[SIMULATION] Spawning Python AI Service for ${camera_id} with video ${path.basename(videoPath)}...`);
       
       const port = process.env.PORT || 8000;
       const child = spawn(pythonExe, [

@@ -299,31 +299,10 @@ export const HOTLIST_PLATES = new Set([
 
 class DataStore {
   constructor() {
-    this.cameras = new Map(INITIAL_CAMERAS.map((c) => [c.camera_id, { ...c }]));
-    this.vehicles = new Map(INITIAL_VEHICLES.map((v) => [v.vehicle_id, { ...v }]));
-    this.detections = [...INITIAL_DETECTIONS];
-    this.alerts = [
-      {
-        id: 'ALT_001',
-        type: 'cloned_plate',
-        severity: 'critical',
-        plate_number: 'WB12AB1234',
-        vehicle_type: 'car',
-        description: 'Simultaneous detection at Esplanade Crossing and Salt Lake Sector V within 30 seconds. Spatial-temporal velocity exceeds physical limits.',
-        timestamp: new Date(Date.now() - 120000).toISOString(),
-        cameras: ['CAM_002', 'CAM_003'],
-      },
-      {
-        id: 'ALT_002',
-        type: 'hotlist_match',
-        severity: 'high',
-        plate_number: 'WB18GH3456',
-        vehicle_type: 'truck',
-        description: 'Flagged in West Bengal Police FIR-2026-BEL-04 (Commercial Cargo Theft). Last observed crossing Howrah Bridge heading East.',
-        timestamp: new Date(Date.now() - 420000).toISOString(),
-        cameras: ['CAM_004'],
-      },
-    ];
+    this.cameras = new Map(INITIAL_CAMERAS.map((c) => [c.camera_id, { ...c, vehicle_count: 0, vehicleCount: 0 }]));
+    this.vehicles = new Map();
+    this.detections = [];
+    this.alerts = [];
   }
 
   // Camera methods
@@ -381,7 +360,7 @@ class DataStore {
   }
 
   resetCameras() {
-    this.cameras = new Map(INITIAL_CAMERAS.map((c) => [c.camera_id, { ...c }]));
+    this.cameras = new Map(INITIAL_CAMERAS.map((c) => [c.camera_id, { ...c, vehicle_count: 0, vehicleCount: 0 }]));
     return Array.from(this.cameras.values());
   }
 
