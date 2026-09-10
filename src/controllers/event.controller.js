@@ -17,6 +17,29 @@ export const createDetectionEvent = async (req, res, next) => {
     // 1. Resolve Global Vehicle Identity (Re-ID / Plate / New)
     const { vehicle, isNew, matchedBy, anomalyAlert } = await identityService.resolveIdentity(eventData);
 
+    if (payload.status === 'exited') {
+      broadcastTrafficEvent({
+        id: eventId,
+        type: 'vehicle_exited',
+        timestamp: payload.observed_at,
+        data: {
+          vehicleId: vehicle.vehicle_id,
+          plateNumber: vehicle.plate_number,
+          cameraId: payload.camera_id,
+          localTrackId: payload.local_track_id || null,
+        },
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          accepted: true,
+          event_id: eventId,
+          status: 'exited',
+        },
+      });
+    }
+
     // 2. Persist Detection Event
     dataStore.saveDetection({
       event_id: eventId,
