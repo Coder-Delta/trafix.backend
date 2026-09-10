@@ -179,7 +179,7 @@ export const identityService = {
 
     // 3. Register New Global Vehicle Identity
     const newVehicleId = `VH_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-    const assignedPlate = cleanPlate || event.local_track_id || `WB_${newVehicleId.substring(3)}`;
+    const assignedPlate = cleanPlate || event.local_track_id || `TRACK_${newVehicleId.substring(3)}`;
 
     const newVehicle = {
       vehicle_id: newVehicleId,
