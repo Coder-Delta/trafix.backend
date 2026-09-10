@@ -28,18 +28,32 @@ export const playCameraDetection = async (req, res, next) => {
     }
 
     const aiRootDir = path.resolve(__dirname, '../../../Traffix_Ai');
+    const frontendVideosDir = path.resolve(__dirname, '../../../TraffixAI-F/public/videos');
     const pythonExe = path.join(aiRootDir, 'venv/bin/python');
     const mainPy = path.join(aiRootDir, 'main.py');
 
     // Dynamically resolve video from camera.stream_url or custom video
     let videoPath = path.join(aiRootDir, 'data/videos/215258_medium.mp4');
     if (camera.stream_url) {
-      if (fs.existsSync(camera.stream_url)) {
-        videoPath = camera.stream_url;
-      } else if (camera.stream_url.includes('sample')) {
-        videoPath = path.join(aiRootDir, 'data/videos/215258_medium.mp4');
-      } else if (camera.stream_url.includes('junction')) {
-        videoPath = path.join(aiRootDir, 'data/videos/215258_medium.mp4');
+      const url = camera.stream_url.trim();
+      const filename = path.basename(url.split('?')[0]);
+      const possiblePaths = [
+        url,
+        path.join(aiRootDir, 'data/videos', filename),
+        path.join(frontendVideosDir, filename),
+        path.join(aiRootDir, 'data/videos', url),
+        path.join(frontendVideosDir, url),
+      ];
+
+      for (const p of possiblePaths) {
+        try {
+          if (fs.existsSync(p) && fs.statSync(p).isFile()) {
+            videoPath = p;
+            break;
+          }
+        } catch {
+          // Ignore invalid path syntax
+        }
       }
     }
 
