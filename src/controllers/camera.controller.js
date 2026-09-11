@@ -244,7 +244,7 @@ export const ensureStreamDaemonRunning = async () => {
       stdio: 'ignore',
     });
 
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 25; i++) {
       await new Promise((r) => setTimeout(r, 250));
       try {
         const check = await fetch(`http://${streamServerHost}:${streamServerPort}/health`, { signal: AbortSignal.timeout(300) });
