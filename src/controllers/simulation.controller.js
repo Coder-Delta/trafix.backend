@@ -59,21 +59,22 @@ export const playCameraDetection = async (req, res, next) => {
 
     const canRunPython = fs.existsSync(pythonExe) && fs.existsSync(mainPy) && fs.existsSync(videoPath);
 
-    // 1. First check if Traffix_Ai Standby Daemon is running on port 8002
+    import('../controllers/camera.controller.js').then((m) => m.ensureStreamDaemonRunning?.());
+
+    // 1. Check / ensure Traffix_Ai Stream Daemon is running on port 8002
     try {
       const daemonCheck = await fetch('http://localhost:8002/status', { signal: AbortSignal.timeout(600) });
       if (daemonCheck.ok) {
-        console.log(`[SIMULATION] Waking up Traffix_Ai Standby Daemon (port 8002) for ${camera_id}...`);
-        fetch('http://localhost:8002/api/v1/detect', {
+        console.log(`[SIMULATION] Waking up Traffix_Ai Stream Daemon (port 8002) for ${camera_id}...`);
+        await fetch('http://localhost:8002/api/v1/detect', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             camera_id,
             video_source: videoPath,
             backend_url: `http://localhost:${process.env.PORT || 8000}`,
-            max_frames,
           }),
-        }).catch((err) => console.warn(`[SIMULATION] Daemon call error: ${err.message}`));
+        });
 
         return res.status(200).json({
           success: true,
@@ -82,12 +83,13 @@ export const playCameraDetection = async (req, res, next) => {
             mode: 'ai_daemon',
             camera_id,
             camera_name: camera.name,
-            message: `Traffix_Ai Standby Daemon awakened for ${camera.name}`,
+            video_path: videoPath,
+            message: `Continuous AI live detection running for ${camera.name}`,
           },
         });
       }
-    } catch {
-      // Daemon not running, fall back to direct child process spawn
+    } catch (err) {
+      console.warn(`[SIMULATION] Daemon call error: ${err.message}`);
     }
 
     if (mode === 'ai' || (mode === 'auto' && canRunPython)) {
