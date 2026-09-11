@@ -213,12 +213,59 @@ export const updateCameraDetails = async (req, res, next) => {
   }
 };
 
+import { spawn } from 'child_process';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+let streamDaemonProc = null;
+
+export const ensureStreamDaemonRunning = async () => {
+  const streamServerPort = process.env.STREAM_SERVER_PORT || 8002;
+  const streamServerHost = process.env.STREAM_SERVER_HOST || '127.0.0.1';
+
+  try {
+    const res = await fetch(`http://${streamServerHost}:${streamServerPort}/health`, { signal: AbortSignal.timeout(400) });
+    if (res.ok) return true;
+  } catch {}
+
+  const aiRootDir = path.resolve(__dirname, '../../../Traffix_Ai');
+  const pythonExe = path.join(aiRootDir, 'venv/bin/python');
+  const streamServerPy = path.join(aiRootDir, 'server/stream_server.py');
+
+  if (fs.existsSync(pythonExe) && fs.existsSync(streamServerPy)) {
+    console.log('[STREAM-CONTROLLER] Launching Traffix_Ai stream daemon on port 8002...');
+    streamDaemonProc = spawn(pythonExe, [streamServerPy], {
+      cwd: aiRootDir,
+      detached: false,
+      stdio: 'ignore',
+    });
+
+    for (let i = 0; i < 12; i++) {
+      await new Promise((r) => setTimeout(r, 250));
+      try {
+        const check = await fetch(`http://${streamServerHost}:${streamServerPort}/health`, { signal: AbortSignal.timeout(300) });
+        if (check.ok) {
+          console.log('[STREAM-CONTROLLER] Traffix_Ai stream daemon successfully started on port 8002.');
+          return true;
+        }
+      } catch {}
+    }
+  }
+  return false;
+};
+
 export const streamCamera = async (req, res, next) => {
   try {
     const { camera_id } = req.params;
     const camera = dataStore.getCamera(camera_id);
     const streamServerPort = process.env.STREAM_SERVER_PORT || 8002;
     const streamServerHost = process.env.STREAM_SERVER_HOST || '127.0.0.1';
+
+    await ensureStreamDaemonRunning();
 
     let videoPathQuery = '';
     if (camera && (camera.stream_url || camera.streamUrl)) {
@@ -239,12 +286,12 @@ export const streamCamera = async (req, res, next) => {
     });
 
     proxyReq.on('error', (err) => {
-      console.warn(`[STREAM-PROXY] AI live stream offline on port ${streamServerPort} (${err.message})`);
+      console.warn(`[STREAM-PROXY] AI live stream error (${err.message})`);
       if (!res.headersSent) {
         res.status(503).json({
           success: false,
           error: 'AI_STREAM_UNAVAILABLE',
-          message: `AI Stream Daemon offline on port ${streamServerPort}. Please ensure Traffix_Ai stream_server is running.`,
+          message: `AI Stream Daemon offline on port ${streamServerPort}.`,
         });
       }
     });
