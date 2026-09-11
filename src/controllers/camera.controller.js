@@ -213,6 +213,50 @@ export const updateCameraDetails = async (req, res, next) => {
   }
 };
 
+export const streamCamera = async (req, res, next) => {
+  try {
+    const { camera_id } = req.params;
+    const camera = dataStore.getCamera(camera_id);
+    const streamServerPort = process.env.STREAM_SERVER_PORT || 8002;
+    const streamServerHost = process.env.STREAM_SERVER_HOST || '127.0.0.1';
+
+    let videoPathQuery = '';
+    if (camera && (camera.stream_url || camera.streamUrl)) {
+      videoPathQuery = `?video_path=${encodeURIComponent(camera.stream_url || camera.streamUrl)}`;
+    }
+
+    const aiStreamUrl = `http://${streamServerHost}:${streamServerPort}/api/v1/stream/${camera_id}${videoPathQuery}`;
+
+    const httpModule = await import('http');
+    const proxyReq = httpModule.default.get(aiStreamUrl, (proxyRes) => {
+      res.writeHead(proxyRes.statusCode || 200, {
+        ...(proxyRes.headers || {}),
+        'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Connection': 'close',
+      });
+      proxyRes.pipe(res);
+    });
+
+    proxyReq.on('error', (err) => {
+      console.warn(`[STREAM-PROXY] AI live stream offline on port ${streamServerPort} (${err.message})`);
+      if (!res.headersSent) {
+        res.status(503).json({
+          success: false,
+          error: 'AI_STREAM_UNAVAILABLE',
+          message: `AI Stream Daemon offline on port ${streamServerPort}. Please ensure Traffix_Ai stream_server is running.`,
+        });
+      }
+    });
+
+    req.on('close', () => {
+      proxyReq.destroy();
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export default {
   listCameras,
   getCameraById,
@@ -222,4 +266,5 @@ export default {
   deleteCamera,
   resetCameras,
   updateCameraDetails,
+  streamCamera,
 };
