@@ -227,4 +227,42 @@ export const playCameraDetection = async (req, res, next) => {
   }
 };
 
-export default { playCameraDetection };
+export const stopCameraDetection = async (req, res, next) => {
+  try {
+    const { camera_id } = req.body || {};
+    
+    if (activeProcess) {
+      try {
+        activeProcess.kill('SIGTERM');
+        console.log(`[SIMULATION] Killed active Python process for camera ${camera_id || 'unknown'}`);
+      } catch (err) {
+        console.warn(`[SIMULATION] Could not kill process: ${err.message}`);
+      }
+      activeProcess = null;
+    }
+
+    try {
+      if (camera_id) {
+        await fetch(`http://localhost:8002/api/v1/stream/stop/${camera_id}`, {
+          method: 'POST',
+          signal: AbortSignal.timeout(500),
+        });
+      }
+    } catch {
+      // AI stream daemon may not be active
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        stopped: true,
+        camera_id,
+        message: `Detection stopped for camera ${camera_id || 'all'}`,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export default { playCameraDetection, stopCameraDetection };
