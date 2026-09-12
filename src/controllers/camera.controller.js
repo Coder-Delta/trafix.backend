@@ -309,6 +309,56 @@ export const streamCamera = async (req, res, next) => {
   }
 };
 
+export const listAvailableVideos = async (req, res, next) => {
+  try {
+    const frontendVideosDir = path.resolve(__dirname, '../../../TraffixAI-F/public/videos');
+    const aiVideosDir = path.resolve(__dirname, '../../../Traffix_Ai/data/videos');
+
+    const videoMap = new Map();
+    const videoExts = new Set(['.mp4', '.mov', '.avi', '.mkv', '.webm']);
+
+    const scanDir = (dirPath) => {
+      if (fs.existsSync(dirPath)) {
+        try {
+          const files = fs.readdirSync(dirPath);
+          for (const file of files) {
+            const ext = path.extname(file).toLowerCase();
+            if (videoExts.has(ext)) {
+              const filePath = path.join(dirPath, file);
+              const stat = fs.statSync(filePath);
+              if (!videoMap.has(file)) {
+                videoMap.set(file, {
+                  id: file,
+                  filename: file,
+                  name: file.replace(/[-_]/g, ' ').replace(/\.[^/.]+$/, ''),
+                  path: `/videos/${file}`,
+                  sizeBytes: stat.size,
+                  sizeFormatted: `${(stat.size / (1024 * 1024)).toFixed(1)} MB`,
+                });
+              }
+            }
+          }
+        } catch {}
+      }
+    };
+
+    scanDir(frontendVideosDir);
+    scanDir(aiVideosDir);
+
+    const videos = Array.from(videoMap.values());
+
+    res.status(200).json({
+      success: true,
+      data: {
+        videos,
+        total: videos.length,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export default {
   listCameras,
   getCameraById,
@@ -319,4 +369,5 @@ export default {
   resetCameras,
   updateCameraDetails,
   streamCamera,
+  listAvailableVideos,
 };

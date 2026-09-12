@@ -9,12 +9,14 @@ import {
   resetCameras,
   updateCameraDetails,
   streamCamera,
+  listAvailableVideos,
 } from '../controllers/camera.controller.js';
 import { publicAccess, requireOperator } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
 router.get('/', publicAccess, listCameras);
+router.get('/videos', publicAccess, listAvailableVideos);
 router.post('/', publicAccess, createCamera);
 router.post('/reset', publicAccess, resetCameras);
 router.get('/:camera_id', publicAccess, getCameraById);
