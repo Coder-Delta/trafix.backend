@@ -276,13 +276,18 @@ export const streamCamera = async (req, res, next) => {
 
     const httpModule = await import('http');
     const proxyReq = httpModule.default.get(aiStreamUrl, (proxyRes) => {
-      res.writeHead(proxyRes.statusCode || 200, {
-        ...(proxyRes.headers || {}),
-        'Access-Control-Allow-Origin': '*',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Connection': 'close',
+      res.setHeader('Content-Type', 'multipart/x-mixed-replace; boundary=frame');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Connection', 'close');
+      res.writeHead(proxyRes.statusCode || 200);
+
+      proxyRes.on('data', (chunk) => {
+        res.write(chunk);
       });
-      proxyRes.pipe(res);
+      proxyRes.on('end', () => {
+        res.end();
+      });
     });
 
     proxyReq.on('error', (err) => {
