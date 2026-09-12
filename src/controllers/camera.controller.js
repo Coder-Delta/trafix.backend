@@ -331,7 +331,6 @@ export const streamCamera = async (req, res, next) => {
 export const listAvailableVideos = async (req, res, next) => {
   try {
     const frontendVideosDir = path.resolve(__dirname, '../../../TraffixAI-F/public/videos');
-    const aiVideosDir = path.resolve(__dirname, '../../../Traffix_Ai/data/videos');
 
     const videoMap = new Map();
     const videoExts = new Set(['.mp4', '.mov', '.avi', '.mkv', '.webm']);
@@ -339,7 +338,7 @@ export const listAvailableVideos = async (req, res, next) => {
     const scanDir = (dirPath) => {
       if (fs.existsSync(dirPath)) {
         try {
-          const files = fs.readdirSync(dirPath);
+          const files = fs.readdirSync(dirPath).sort();
           for (const file of files) {
             const ext = path.extname(file).toLowerCase();
             if (videoExts.has(ext)) {
@@ -362,7 +361,6 @@ export const listAvailableVideos = async (req, res, next) => {
     };
 
     scanDir(frontendVideosDir);
-    scanDir(aiVideosDir);
 
     const videos = Array.from(videoMap.values());
 
