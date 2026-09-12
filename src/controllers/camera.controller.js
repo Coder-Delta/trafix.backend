@@ -223,6 +223,25 @@ const __dirname = path.dirname(__filename);
 
 let streamDaemonProc = null;
 
+export const stopStreamDaemon = () => {
+  if (streamDaemonProc && !streamDaemonProc.killed) {
+    try {
+      streamDaemonProc.kill('SIGTERM');
+    } catch {}
+    streamDaemonProc = null;
+  }
+};
+
+process.on('exit', stopStreamDaemon);
+process.on('SIGINT', () => {
+  stopStreamDaemon();
+  process.exit(0);
+});
+process.on('SIGTERM', () => {
+  stopStreamDaemon();
+  process.exit(0);
+});
+
 export const ensureStreamDaemonRunning = async () => {
   const streamServerPort = process.env.STREAM_SERVER_PORT || 8002;
   const streamServerHost = process.env.STREAM_SERVER_HOST || '127.0.0.1';
@@ -237,7 +256,7 @@ export const ensureStreamDaemonRunning = async () => {
   const streamServerPy = path.join(aiRootDir, 'server/stream_server.py');
 
   if (fs.existsSync(pythonExe) && fs.existsSync(streamServerPy)) {
-    console.log('[STREAM-CONTROLLER] Launching Traffix_Ai stream daemon on port 8002...');
+    console.log('[STREAM-CONTROLLER] 🧠 Auto-starting Traffix_Ai Python daemon on port 8002...');
     streamDaemonProc = spawn(pythonExe, [streamServerPy], {
       cwd: aiRootDir,
       detached: false,
@@ -249,7 +268,7 @@ export const ensureStreamDaemonRunning = async () => {
       try {
         const check = await fetch(`http://${streamServerHost}:${streamServerPort}/health`, { signal: AbortSignal.timeout(300) });
         if (check.ok) {
-          console.log('[STREAM-CONTROLLER] Traffix_Ai stream daemon successfully started on port 8002.');
+          console.log('[STREAM-CONTROLLER] ✅ Traffix_Ai stream daemon successfully started on port 8002.');
           return true;
         }
       } catch {}

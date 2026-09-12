@@ -5,6 +5,7 @@ import { initializeDatabase } from './config/database.js';
 import { initializeRedis } from './config/redis.js';
 import { dataStore } from './store/persistence.js';
 import { attachTrafficSocketServer, attachVehicleSocketServer } from './websocket/traffic.ws.js';
+import { ensureStreamDaemonRunning } from './controllers/camera.controller.js';
 
 const port = Number(process.env.PORT || 8000);
 
@@ -13,6 +14,11 @@ const startServer = async () => {
     await initializeDatabase();
     await dataStore.init();
     await initializeRedis();
+
+    // Auto-boot AI stream daemon in the background
+    ensureStreamDaemonRunning().catch((err) => {
+      console.warn('[SERVER] Could not auto-boot AI stream daemon:', err.message);
+    });
 
     const server = http.createServer(app);
 
