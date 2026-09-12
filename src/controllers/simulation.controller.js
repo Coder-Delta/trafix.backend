@@ -17,10 +17,36 @@ const SAMPLE_EMBEDDINGS = {
 };
 
 let activeProcess = null;
+const activeCameras = new Set();
+
+export const getSimulationStatus = async (req, res, next) => {
+  try {
+    try {
+      const daemonCheck = await fetch('http://localhost:8002/status', { signal: AbortSignal.timeout(400) });
+      if (daemonCheck.ok) {
+        const json = await daemonCheck.json();
+        if (Array.isArray(json.active_cameras)) {
+          json.active_cameras.forEach((id) => activeCameras.add(id));
+        }
+      }
+    } catch {}
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        active_cameras: Array.from(activeCameras),
+        has_active_detection: activeCameras.size > 0,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
 
 export const playCameraDetection = async (req, res, next) => {
   try {
     const { camera_id = 'CAM_001', mode = 'auto', max_frames = 60 } = req.body || {};
+    activeCameras.add(camera_id);
     const camera = dataStore.getCamera(camera_id);
 
     if (!camera) {
@@ -232,6 +258,11 @@ export const playCameraDetection = async (req, res, next) => {
 export const stopCameraDetection = async (req, res, next) => {
   try {
     const { camera_id } = req.body || {};
+    if (camera_id) {
+      activeCameras.delete(camera_id);
+    } else {
+      activeCameras.clear();
+    }
     
     if (activeProcess) {
       try {
@@ -259,6 +290,7 @@ export const stopCameraDetection = async (req, res, next) => {
       data: {
         stopped: true,
         camera_id,
+        active_cameras: Array.from(activeCameras),
         message: `Detection stopped for camera ${camera_id || 'all'}`,
       },
     });
@@ -267,4 +299,4 @@ export const stopCameraDetection = async (req, res, next) => {
   }
 };
 
-export default { playCameraDetection, stopCameraDetection };
+export default { playCameraDetection, stopCameraDetection, getSimulationStatus };
