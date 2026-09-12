@@ -32,5 +32,12 @@ build/
 *.sqlite3
 *.db
 
+# Videos & Media
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+
 # Misc
 *.pid
